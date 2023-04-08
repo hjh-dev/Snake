@@ -15,6 +15,10 @@ class MainActivity : AppCompatActivity(), IKeyData {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        initView()
+    }
+
+    private fun initView(){
         mKeyView = findViewById(R.id.controlView)
         mBackgroundView = findViewById(R.id.backgroundView)
         mKeyView.setIKeyData(this)
@@ -23,16 +27,15 @@ class MainActivity : AppCompatActivity(), IKeyData {
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
-        if (hasFocus) hideSystemUI()
+        if (hasFocus)
+            hideSystemUI()
     }
 
+    /**
+     * 隐藏状态栏
+     */
     private fun hideSystemUI() {
-        window.decorView.systemUiVisibility = (View.SYSTEM_UI_FLAG_IMMERSIVE
-                or View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                or View.SYSTEM_UI_FLAG_FULLSCREEN)
+        window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_FULLSCREEN
     }
 
     override fun gameState(gameState: GameStateEnum) {

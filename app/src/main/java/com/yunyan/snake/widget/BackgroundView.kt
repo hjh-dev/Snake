@@ -26,12 +26,17 @@ class BackgroundView(context: Context, attributeSet: AttributeSet) : View(contex
     private lateinit var mPaintFood: Paint
 
     /**
+     * 默认蛇身长度
+     */
+    private val DEFAULT_LENGTH = 2
+
+    /**
      * 蛇整体长度
      */
-    private var mSnakeLength = 2
+    private var mSnakeLength = DEFAULT_LENGTH
 
-    private val mSnakeX = FloatArray(800)
-    private val mSnakeY = FloatArray(800)
+    private lateinit var mSnakeX: FloatArray
+    private lateinit var mSnakeY: FloatArray
 
     private var mDirectionEnum = DirectionStateEnum.RIGHT
     private var mGameState = GameStateEnum.STOP
@@ -41,35 +46,20 @@ class BackgroundView(context: Context, attributeSet: AttributeSet) : View(contex
     private var mFoodX = 0f
     private var mFoodY = 0f
 
-    private val mHandler = @SuppressLint("HandlerLeak")
-
-    object : Handler() {
-        override fun handleMessage(msg: Message) {
-            if (msg.what == 99 && mGameState == GameStateEnum.START) {
-                judgmentDirection()
-                invalidate()
-            }
-        }
-
-    }
-
-    /**
-     * 定时器，每隔 0.1s向 handler 发送消息
-     */
-    private val mTimer = Timer().schedule(object : TimerTask() {
-        override fun run() {
-            val message = Message()
-            message.what = 99
-            mHandler.sendMessage(message)
-        }
-
-    }, 0, 100)
-
     init {
         init()
     }
 
     private fun init() {
+        initPaint()
+        initData()
+        moveSnake()
+    }
+
+    /**
+     * 初始化画笔
+     */
+    private fun initPaint() {
         mPaintHead = Paint()
         mPaintBody = Paint()
         mPaintFood = Paint()
@@ -79,10 +69,40 @@ class BackgroundView(context: Context, attributeSet: AttributeSet) : View(contex
         mPaintHead.color = resources.getColor(R.color.head, null)
         mPaintBody.color = resources.getColor(R.color.body, null)
         mPaintFood.color = resources.getColor(R.color.food, null)
+    }
+
+    /**
+     * 初始化蛇与食物
+     */
+    private fun initData() {
+        mSnakeX = FloatArray(800)
+        mSnakeY = FloatArray(800)
         mSnakeX[0] = 750f
         mSnakeY[0] = 500f
         mFoodX = 25 * Random().nextInt(15).toFloat()
         mFoodY = 25 * Random().nextInt(15).toFloat()
+    }
+
+    /**
+     * 移动蛇
+     */
+    private fun moveSnake() {
+        @SuppressLint("HandlerLeak") val mHandler: Handler = object : Handler() {
+            override fun handleMessage(msg: Message) {
+                if (msg.what == 99 && mGameState === GameStateEnum.START) {
+                    judgmentDirection()
+                    invalidate()
+                }
+            }
+        }
+        // 定时器，每隔 0.1s向 handler 发送消息
+        Timer().schedule(object : TimerTask() {
+            override fun run() {
+                val message = Message()
+                message.what = 99
+                mHandler.sendMessage(message)
+            }
+        }, 0, 100)
     }
 
     fun setIKeyData(iKeyData: IKeyData) {
@@ -98,10 +118,13 @@ class BackgroundView(context: Context, attributeSet: AttributeSet) : View(contex
      */
     private fun gameOver() {
         mGameState = GameStateEnum.STOP
+        mDirectionEnum = DirectionStateEnum.RIGHT
         mIKeyData.gameState(mGameState)
-        mSnakeLength = 2
+        mSnakeLength = DEFAULT_LENGTH
         mSnakeX[0] = 750f
         mSnakeY[0] = 500f
+        initData()
+        invalidate()
     }
 
     /**
@@ -109,7 +132,6 @@ class BackgroundView(context: Context, attributeSet: AttributeSet) : View(contex
      */
     fun setDirection(directionState: DirectionStateEnum) {
         if (isDirectionContrary(directionState)) {
-            mGameState = GameStateEnum.STOP
             gameOver()
             Toast.makeText(context, "方向相反，游戏失败！", Toast.LENGTH_SHORT).show()
         }
@@ -145,20 +167,24 @@ class BackgroundView(context: Context, attributeSet: AttributeSet) : View(contex
     private fun judgmentDirection() {
         when (mDirectionEnum) {
             DirectionStateEnum.UP -> {
+                // 超过屏幕上侧，从下恻出
                 mSnakeY[0] = mSnakeY[0] - 25
-                if (mSnakeY[0] < 25) mSnakeY[0] = measuredHeight.toFloat()
+                if (mSnakeY[1] <= 0) mSnakeY[0] = measuredHeight.toFloat()
             }
             DirectionStateEnum.DOWN -> {
+                // 超过屏幕下侧，从上恻出
                 mSnakeY[0] = mSnakeY[0] + 25
-                if (mSnakeY[0] > measuredHeight) mSnakeY[0] = 25f
+                if (mSnakeY[0] > measuredHeight) mSnakeY[0] = 0f
             }
             DirectionStateEnum.LEFT -> {
+                // 超过屏幕左侧，从右恻出
                 mSnakeX[0] = mSnakeX[0] - 25
-                if (mSnakeX[0] < 25) mSnakeX[0] = measuredWidth.toFloat()
+                if (mSnakeX[1] <= 0) mSnakeX[0] = measuredWidth.toFloat()
             }
             DirectionStateEnum.RIGHT -> {
+                // 超过屏幕右侧，从左恻出
                 mSnakeX[0] = mSnakeX[0] + 25
-                if (mSnakeX[0] > measuredWidth) mSnakeX[0] = 25f
+                if (mSnakeX[0] > measuredWidth) mSnakeX[0] = 0f
             }
         }
     }
@@ -166,18 +192,16 @@ class BackgroundView(context: Context, attributeSet: AttributeSet) : View(contex
     override fun onDraw(canvas: Canvas?) {
         if (mGameState == GameStateEnum.START) {
             //  判断是否吃到食物
-            if (mSnakeX[0] == mFoodX && mSnakeY[0] == mFoodY) {
+            if ((mSnakeX[0] in mFoodX - 15..mFoodX + 15) && (mSnakeY[0] in mFoodY - 15..mFoodY + 15)) {
                 mFoodX = 25 * Random().nextInt(measuredWidth / 25).toFloat()
                 mFoodY = 25 * Random().nextInt(measuredHeight / 25).toFloat()
                 mSnakeLength++
             }
-
             //  绘制蛇身
             for (i in mSnakeLength downTo 1) {
-
                 if (mSnakeX[0] == mSnakeX[i] && mSnakeY[0] == mSnakeY[i]) {
-                    Toast.makeText(context, "咬到自己，游戏失败！", Toast.LENGTH_SHORT).show()
                     gameOver()
+                    Toast.makeText(context, "咬到自己，游戏失败！", Toast.LENGTH_SHORT).show()
                 }
                 mSnakeX[i] = mSnakeX[i - 1]
                 mSnakeY[i] = mSnakeY[i - 1]
