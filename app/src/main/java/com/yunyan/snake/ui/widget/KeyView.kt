@@ -1,12 +1,10 @@
-package com.yunyan.snake.widget
+package com.yunyan.snake.ui.widget
 
 import android.content.Context
 import android.util.AttributeSet
 import android.view.View
 import android.widget.Button
 import android.widget.FrameLayout
-import com.yunyan.snake.DirectionStateEnum
-import com.yunyan.snake.GameStateEnum
 import com.yunyan.snake.R
 
 /**

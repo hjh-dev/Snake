@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="key_btn_direction">60dp</dimen>
+    <dimen name="key_btn_start">90dp</dimen>
+</resources>

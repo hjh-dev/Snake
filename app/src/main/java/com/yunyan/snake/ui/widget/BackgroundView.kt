@@ -1,4 +1,4 @@
-package com.yunyan.snake.widget
+package com.yunyan.snake.ui.widget
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -8,10 +8,14 @@ import android.os.Handler
 import android.os.Message
 import android.util.AttributeSet
 import android.view.View
-import android.widget.Toast
-import com.yunyan.snake.DirectionStateEnum
-import com.yunyan.snake.GameStateEnum
+import android.view.ViewGroup
+import android.widget.EditText
+import android.widget.FrameLayout
+import androidx.appcompat.app.AlertDialog
 import com.yunyan.snake.R
+import com.yunyan.snake.dao.RankingDBManager
+import com.yunyan.snake.dao.UserDao
+import com.yunyan.snake.ui.activity.IScore
 import java.util.*
 
 /**
@@ -35,6 +39,11 @@ class BackgroundView(context: Context, attributeSet: AttributeSet) : View(contex
      */
     private var mSnakeLength = DEFAULT_LENGTH
 
+    /**
+     * 最大蛇身长度
+     */
+    private val MAX_LENGTH = 1000 + DEFAULT_LENGTH
+
     private lateinit var mSnakeX: FloatArray
     private lateinit var mSnakeY: FloatArray
 
@@ -45,6 +54,11 @@ class BackgroundView(context: Context, attributeSet: AttributeSet) : View(contex
 
     private var mFoodX = 0f
     private var mFoodY = 0f
+
+    private lateinit var mIScore: IScore
+
+    // 得分
+    private var mScore = 0
 
     init {
         init()
@@ -75,8 +89,8 @@ class BackgroundView(context: Context, attributeSet: AttributeSet) : View(contex
      * 初始化蛇与食物
      */
     private fun initData() {
-        mSnakeX = FloatArray(800)
-        mSnakeY = FloatArray(800)
+        mSnakeX = FloatArray(MAX_LENGTH + 1)
+        mSnakeY = FloatArray(MAX_LENGTH + 1)
         mSnakeX[0] = 750f
         mSnakeY[0] = 500f
         mFoodX = 25 * Random().nextInt(15).toFloat()
@@ -109,6 +123,10 @@ class BackgroundView(context: Context, attributeSet: AttributeSet) : View(contex
         this.mIKeyData = iKeyData
     }
 
+    fun setIScore(mIScore: IScore?) {
+        this.mIScore = mIScore!!
+    }
+
     fun setGameState(gameStateEnum: GameStateEnum) {
         this.mGameState = gameStateEnum
     }
@@ -116,7 +134,20 @@ class BackgroundView(context: Context, attributeSet: AttributeSet) : View(contex
     /**
      * 游戏失败
      */
-    private fun gameOver() {
+    private fun gameOver(message: String) {
+        dialog("游戏结束！", message)
+        gameEnd()
+    }
+
+    /**
+     * 游戏通关
+     */
+    private fun gameClearance() {
+        dialog("游戏通关！", "恭喜你，游戏通关！")
+        gameEnd()
+    }
+
+    private fun gameEnd() {
         mGameState = GameStateEnum.STOP
         mDirectionEnum = DirectionStateEnum.RIGHT
         mIKeyData.gameState(mGameState)
@@ -127,13 +158,38 @@ class BackgroundView(context: Context, attributeSet: AttributeSet) : View(contex
         invalidate()
     }
 
+    private fun dialog(title: String, message: String) {
+        val builder = AlertDialog.Builder(
+            context
+        )
+        val edt = EditText(context)
+        edt.hint = "请输入用户名"
+        edt.isSingleLine = true
+        val container = FrameLayout(context)
+        val params = FrameLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT
+        )
+        params.setMargins(60, 0, 60, 0)
+        edt.layoutParams = params
+        container.addView(edt)
+        builder.setTitle(title)
+            .setMessage("$message\n本局得分：$mScore")
+            .setView(container)
+            .setPositiveButton(R.string.dialog_positive) { dialog, id ->
+                gameEnd()
+                RankingDBManager.getInstance(context).insert(UserDao(edt.text.toString(), mScore))
+                dialog.dismiss()
+            }
+            .show()
+    }
+
     /**
      * 设置蛇头方向
      */
     fun setDirection(directionState: DirectionStateEnum) {
         if (isDirectionContrary(directionState)) {
-            gameOver()
-            Toast.makeText(context, "方向相反，游戏失败！", Toast.LENGTH_SHORT).show()
+            gameOver("方向相反，游戏失败！")
         }
         if (mGameState == GameStateEnum.START) {
             this.mDirectionEnum = directionState
@@ -148,12 +204,15 @@ class BackgroundView(context: Context, attributeSet: AttributeSet) : View(contex
             DirectionStateEnum.UP -> {
                 if (this.mDirectionEnum == DirectionStateEnum.DOWN) return true
             }
+
             DirectionStateEnum.DOWN -> {
                 if (this.mDirectionEnum == DirectionStateEnum.UP) return true
             }
+
             DirectionStateEnum.LEFT -> {
                 if (this.mDirectionEnum == DirectionStateEnum.RIGHT) return true
             }
+
             DirectionStateEnum.RIGHT -> {
                 if (this.mDirectionEnum == DirectionStateEnum.LEFT) return true
             }
@@ -171,16 +230,19 @@ class BackgroundView(context: Context, attributeSet: AttributeSet) : View(contex
                 mSnakeY[0] = mSnakeY[0] - 25
                 if (mSnakeY[1] <= 0) mSnakeY[0] = measuredHeight.toFloat()
             }
+
             DirectionStateEnum.DOWN -> {
                 // 超过屏幕下侧，从上恻出
                 mSnakeY[0] = mSnakeY[0] + 25
                 if (mSnakeY[0] > measuredHeight) mSnakeY[0] = 0f
             }
+
             DirectionStateEnum.LEFT -> {
                 // 超过屏幕左侧，从右恻出
                 mSnakeX[0] = mSnakeX[0] - 25
                 if (mSnakeX[1] <= 0) mSnakeX[0] = measuredWidth.toFloat()
             }
+
             DirectionStateEnum.RIGHT -> {
                 // 超过屏幕右侧，从左恻出
                 mSnakeX[0] = mSnakeX[0] + 25
@@ -196,12 +258,19 @@ class BackgroundView(context: Context, attributeSet: AttributeSet) : View(contex
                 mFoodX = 25 * Random().nextInt(measuredWidth / 25).toFloat()
                 mFoodY = 25 * Random().nextInt(measuredHeight / 25).toFloat()
                 mSnakeLength++
+                // 计分
+                mScore = mSnakeLength - DEFAULT_LENGTH
+                // 刷新分数
+                mIScore.refreshScore(mScore)
+                // 分数等于最大长度则游戏通关
+                if (mScore == MAX_LENGTH - DEFAULT_LENGTH) {
+                    gameClearance()
+                }
             }
             //  绘制蛇身
             for (i in mSnakeLength downTo 1) {
                 if (mSnakeX[0] == mSnakeX[i] && mSnakeY[0] == mSnakeY[i]) {
-                    gameOver()
-                    Toast.makeText(context, "咬到自己，游戏失败！", Toast.LENGTH_SHORT).show()
+                    gameOver("咬到自己，游戏失败！")
                 }
                 mSnakeX[i] = mSnakeX[i - 1]
                 mSnakeY[i] = mSnakeY[i - 1]

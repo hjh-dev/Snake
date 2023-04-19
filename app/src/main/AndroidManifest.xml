@@ -9,7 +9,18 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Snake">
-        <activity android:name=".MainActivity"
+        <activity
+            android:name=".ui.activity.RankingActivity"
+            android:exported="false"
+            android:screenOrientation="landscape"
+            android:theme="@style/MyDialogTheme" />
+        <activity
+            android:name=".ui.activity.GameActivity"
+            android:exported="false"
+            android:screenOrientation="landscape" />
+        <activity
+            android:name=".ui.activity.MainActivity"
+            android:exported="true"
             android:screenOrientation="landscape">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

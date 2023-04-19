@@ -1,7 +1,4 @@
-package com.yunyan.snake.widget
-
-import com.yunyan.snake.DirectionStateEnum
-import com.yunyan.snake.GameStateEnum
+package com.yunyan.snake.ui.widget
 
 /**
  * @author: YunYan

@@ -1,3 +1,14 @@
 <resources>
     <string name="app_name">Snake</string>
+
+    <string name="main_tv_title">贪 吃 蛇</string>
+    <string name="main_btn_ranking">排行榜</string>
+    <string name="main_btn_play">开始游戏</string>
+    <string name="game_tv_score">得分：%s</string>
+
+    <string name="dialog_positive">确定</string>
+    <string name="ranking_user">用户</string>
+    <string name="ranking_score">得分</string>
+    <string name="ranking_ranking">名次</string>
+
 </resources>
